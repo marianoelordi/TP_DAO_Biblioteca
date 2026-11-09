@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block titulo %}Reportes{% endblock %}
+{% block contenido %}
+<h1>Reportes</h1>
+<p class="indice">
+  <a href="#activos">Activos y en tránsito</a><a href="#vencidos">Vencidos y multas</a>
+  <a href="#solicitados">Más solicitados</a><a href="#por-sede">Disponibilidad por sede</a>
+  <a href="#movimientos">Movimientos entre sedes</a>
+</p>
+
+<h2 id="activos">1. Préstamos activos y material en tránsito</h2>
+<div class="tabla"><table>
+  <tr><th>Préstamo</th><th>Tipo</th><th>Socio</th><th>Origen → Destino</th><th>Vence</th><th class="num">Pendientes</th></tr>
+  {% for p in activos %}
+  <tr><td><a href="{{ url_for('prestamo', id_prestamo=p.id_prestamo) }}">{{ p.id_prestamo }}</a></td>
+      <td>{{ 'Interbibliotecario' if p.es_interbibliotecario() else 'Local' }}</td><td>{{ p.socio.nombre }}</td>
+      <td>{{ p.sede_origen.nombre }} → {{ p.sede_destino.nombre }}</td><td>{{ p.fecha_vencimiento|fecha }}</td>
+      <td class="num">{{ p.detalles|selectattr('fecha_devolucion_real', 'none')|list|length }}</td></tr>
+  {% else %}<tr><td colspan="6" class="suave">No hay préstamos activos.</td></tr>{% endfor %}
+</table></div>
+<h3>Material en tránsito</h3>
+<div class="tabla"><table>
+  <tr><th>Remito</th><th>Tipo</th><th>Origen → Destino</th><th>Ejemplares</th><th>Despachado</th></tr>
+  {% for t in transito %}
+  <tr><td><a href="{{ url_for('remito', numero=t.numero_remito) }}">{{ t.numero_remito }}</a></td><td>{{ t.tipo }}</td>
+      <td>{{ t.origen }} → {{ t.destino }}</td><td>{{ t.ejemplares }}</td><td>{{ t.fecha_despacho|fecha }}</td></tr>
+  {% else %}<tr><td colspan="5" class="suave">No hay material viajando.</td></tr>{% endfor %}
+</table></div>
+
+<h2 id="vencidos">2. Préstamos vencidos y multas acumuladas</h2>
+<div class="tabla"><table>
+  <tr><th>Préstamo</th><th>Socio</th><th>Venció</th><th class="num">Días de atraso</th><th class="num">Multa a hoy</th></tr>
+  {% for v in vencidos %}
+  <tr><td><a href="{{ url_for('prestamo', id_prestamo=v.prestamo.id_prestamo) }}">{{ v.prestamo.id_prestamo }}</a></td>
+      <td>{{ v.prestamo.socio.nombre }}</td><td>{{ v.prestamo.fecha_vencimiento|fecha }}</td>
+      <td class="num">{{ v.dias }}</td><td class="num">{{ v.multa|pesos }}</td></tr>
+  {% else %}<tr><td colspan="5" class="suave">No hay préstamos vencidos.</td></tr>{% endfor %}
+</table></div>
+<h3>Multas acumuladas por socio (incluye devoluciones fuera de término)</h3>
+<div class="tabla"><table>
+  <tr><th>Socio</th><th class="num">Préstamos con multa</th><th class="num">Total</th></tr>
+  {% for m in multas %}
+  <tr><td>{{ m.socio.numero_socio }} · {{ m.socio.nombre }}</td><td class="num">{{ m.prestamos }}</td>
+      <td class="num">{{ m.total|pesos }}</td></tr>
+  {% else %}<tr><td colspan="3" class="suave">No hay multas.</td></tr>{% endfor %}
+</table></div>
+
+<h2 id="solicitados">3. Libros más solicitados para préstamos inter-sedes</h2>
+<div class="tabla"><table>
+  <tr><th>#</th><th>Título</th><th>Autor</th><th class="num">Ejemplares pedidos</th><th class="num">Préstamos</th><th class="num">Sedes destino</th></tr>
+  {% for l in solicitados %}
+  <tr><td>{{ loop.index }}</td><td><a href="{{ url_for('libro', isbn=l.isbn) }}">{{ l.titulo }}</a></td><td>{{ l.autor }}</td>
+      <td class="num">{{ l.ejemplares_solicitados }}</td><td class="num">{{ l.prestamos }}</td><td class="num">{{ l.sedes_destino }}</td></tr>
+  {% else %}<tr><td colspan="6" class="suave">Todavía no hay préstamos interbibliotecarios.</td></tr>{% endfor %}
+</table></div>
+
+<h2 id="por-sede">4. Disponibilidad del catálogo por sede</h2>
+<div class="tabla"><table>
+  <tr><th>Sede</th><th class="num">Títulos</th><th class="num">Ejemplares</th><th class="num">Disponibles</th>
+      <th class="num">Prestados</th><th class="num">En tránsito</th><th class="num">En otra sede</th><th class="num">% disponible</th></tr>
+  {% for s in por_sede %}
+  <tr><td>{{ s.nombre }}{{ ' (de baja)' if not s.activa }}</td><td class="num">{{ s.titulos }}</td>
+      <td class="num">{{ s.total }}</td><td class="num">{{ s.disponibles }}</td><td class="num">{{ s.no_disponibles }}</td>
+      <td class="num">{{ s.en_transito }}</td><td class="num">{{ s.en_otra_sede }}</td>
+      <td class="num">{{ '%.0f %%' % (100 * s.disponibles / s.total) if s.total else '—' }}</td></tr>
+  {% endfor %}
+</table></div>
+
+<h2 id="movimientos">5. Movimiento de ejemplares entre sedes</h2>
+<div class="tabla"><table>
+  <tr><th>Origen</th><th>Destino</th><th class="num">Remitos</th><th class="num">Entregados</th>
+      <th class="num">En viaje</th><th class="num">Tránsito promedio (h)</th></tr>
+  {% for m in movimientos %}
+  <tr><td>{{ m.origen }}</td><td>{{ m.destino }}</td><td class="num">{{ m.remitos }}</td><td class="num">{{ m.entregados }}</td>
+      <td class="num">{{ m.en_viaje }}</td><td class="num">{{ m.horas_promedio_transito if m.horas_promedio_transito is not none else '—' }}</td></tr>
+  {% else %}<tr><td colspan="6" class="suave">Todavía no hay envíos.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

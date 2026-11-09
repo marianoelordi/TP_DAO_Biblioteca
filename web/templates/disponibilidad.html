@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block titulo %}Disponibilidad{% endblock %}
+{% block contenido %}
+<h1>Consultar disponibilidad</h1>
+<form class="panel grilla" method="get">
+  <label>Sede
+    <select name="sede" required>
+      <option value="">— Elegir —</option>
+      {% for s in sedes %}
+        <option value="{{ s.id_sede }}" {{ 'selected' if s.id_sede == id_sede }}>
+          {{ s.nombre }}{{ ' (de baja)' if not s.esta_activa() }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Libro (opcional)
+    <select name="isbn">
+      <option value="">Todos</option>
+      {% for l in libros %}<option value="{{ l.isbn }}" {{ 'selected' if l.isbn == isbn }}>{{ l.titulo }}</option>{% endfor %}
+    </select>
+  </label>
+  <div><button>Consultar</button></div>
+</form>
+{% if resultado is not none %}
+<p class="suave">{{ resultado|length }} ejemplar(es) disponible(s) para préstamo en la sede.</p>
+<div class="tabla"><table>
+  <tr><th>Código</th><th>Título</th><th>Autor</th><th>Estado físico</th></tr>
+  {% for e in resultado %}
+  <tr><td>{{ e.codigo }}</td><td><a href="{{ url_for('libro', isbn=e.libro.isbn) }}">{{ e.libro.titulo }}</a></td>
+      <td>{{ e.libro.autor }}</td><td>{{ e.estado_fisico }}</td></tr>
+  {% else %}<tr><td colspan="4" class="suave">No hay ejemplares disponibles.</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+{% endblock %}

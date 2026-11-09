@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "macros.html" import estado as etiqueta %}
+{% block titulo %}Remitos{% endblock %}
+{% block contenido %}
+<h1>Remitos</h1>
+<div class="acciones">
+  {% for e in [None, 'Pendiente', 'Empaquetado', 'Enviado', 'Entregado'] %}
+    <a class="boton {{ '' if e == estado else 'secundario' }}"
+       href="{{ url_for('remitos', estado=e) if e else url_for('remitos') }}">{{ e or 'Todos' }}</a>
+  {% endfor %}
+</div>
+<div class="tabla" style="margin-top:1rem"><table>
+  <tr><th>Remito</th><th>Tipo</th><th>Préstamo</th><th>Trayecto</th><th>Estado</th><th>Creado</th><th>Despacho</th><th>Recepción</th></tr>
+  {% for r in remitos %}
+  <tr><td><a href="{{ url_for('remito', numero=r.numero_remito) }}">{{ r.numero_remito }}</a></td><td>{{ r.tipo }}</td>
+      <td><a href="{{ url_for('prestamo', id_prestamo=r.prestamo.id_prestamo) }}">{{ r.prestamo.id_prestamo }}</a></td>
+      <td>{{ r.sede_origen.nombre }} → {{ r.sede_destino.nombre }}</td><td>{{ etiqueta(r.estado.nombre) }}</td>
+      <td>{{ r.fecha_creacion|fecha }}</td><td>{{ r.fecha_despacho|fecha }}</td><td>{{ r.fecha_recepcion|fecha }}</td></tr>
+  {% else %}<tr><td colspan="8" class="suave">No hay remitos.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

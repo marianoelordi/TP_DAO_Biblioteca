@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "macros.html" import estado %}
+{% block titulo %}Reservas{% endblock %}
+{% block contenido %}
+<h1>Reservas</h1>
+<form class="panel grilla" method="post">
+  <label>Socio
+    <select name="numero_socio" required>
+      {% for s in socios %}<option value="{{ s.numero_socio }}">{{ s.numero_socio }} · {{ s.nombre }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Libro
+    <select name="isbn" required>
+      {% for l in libros %}<option value="{{ l.isbn }}">{{ l.titulo }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Sede de retiro
+    <select name="id_sede" required>
+      {% for s in sedes %}<option value="{{ s.id_sede }}">{{ s.nombre }}</option>{% endfor %}
+    </select>
+  </label>
+  <div><button>Registrar reserva</button></div>
+</form>
+<div class="tabla"><table>
+  <tr><th>N°</th><th>Fecha</th><th>Socio</th><th>Libro</th><th>Sede</th><th>Estado</th><th></th></tr>
+  {% for r in reservas %}
+  <tr><td>{{ r.id_reserva }}</td><td>{{ r.fecha_reserva|fecha }}</td><td>{{ r.socio.nombre }}</td>
+      <td>{{ r.libro.titulo }}</td><td>{{ r.sede.nombre }}</td><td>{{ estado(r.estado.nombre) }}</td>
+      <td class="acciones">
+        {% for operacion, texto in OPERACIONES_RESERVA.get(r.estado.nombre, []) %}
+        <form class="linea" method="post" action="{{ url_for('reserva_operacion', id_reserva=r.id_reserva, operacion=operacion) }}">
+          <button class="{{ 'peligro' if operacion == 'cancelar' else 'secundario' }}">{{ texto }}</button>
+        </form>
+        {% endfor %}
+      </td></tr>
+  {% else %}<tr><td colspan="7" class="suave">No hay reservas.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

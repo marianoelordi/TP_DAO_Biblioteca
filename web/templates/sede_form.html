@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "macros.html" import campo %}
+{% block contenido %}
+<h1>{{ 'Editar sede ' ~ sede.nombre if sede else 'Nueva sede' }}</h1>
+<form class="panel grilla" method="post">
+  {{ campo('id_sede', 'Código', datos, solo_lectura=sede is not none) }}
+  {{ campo('nombre', 'Nombre', datos) }}
+  {{ campo('direccion', 'Dirección', datos) }}
+  {{ campo('contacto', 'Contacto (teléfono / mail)', datos) }}
+  {{ campo('horarios', 'Horarios', datos) }}
+  <div class="acciones"><button>Guardar</button>
+    <a class="boton secundario" href="{{ url_for('sedes') }}">Cancelar</a></div>
+</form>
+{% endblock %}

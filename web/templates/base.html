@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Préstamos Interbibliotecarios{% endblock %} · Biblioteca</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='estilos.css') }}">
+</head>
+<body>
+<header>
+  <div class="contenedor">
+    <a class="marca" href="{{ url_for('inicio') }}">📚 Red de Bibliotecas</a>
+    <nav>
+      {% for endpoint, texto in [('sedes','Sedes'), ('socios','Socios'), ('libros','Catálogo'),
+                                 ('disponibilidad','Disponibilidad'), ('prestamos','Préstamos'),
+                                 ('remitos','Remitos'), ('reservas','Reservas'),
+                                 ('ver_reportes','Reportes'), ('notificaciones','Notificaciones')] %}
+        <a href="{{ url_for(endpoint) }}"
+           class="{{ 'activo' if request.endpoint and request.endpoint.startswith(endpoint[:4]) }}">{{ texto }}</a>
+      {% endfor %}
+    </nav>
+  </div>
+</header>
+<main class="contenedor">
+  {% for categoria, mensaje in get_flashed_messages(with_categories=true) %}
+    <div class="mensaje {{ categoria }}">{{ mensaje }}</div>
+  {% endfor %}
+  {% block contenido %}{% endblock %}
+</main>
+</body>
+</html>

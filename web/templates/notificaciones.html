@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block titulo %}Notificaciones{% endblock %}
+{% block contenido %}
+<h1>Notificaciones a socios</h1>
+<p class="suave">Generadas por el observador de remitos (patrón Observer) en cada cambio de estado.</p>
+<div class="tabla"><table>
+  <tr><th>Fecha</th><th>Socio</th><th>Mensaje</th></tr>
+  {% for n in notificaciones %}
+  <tr><td>{{ n.fecha_hora|fecha }}</td><td>{{ n.numero_socio }} · {{ n.nombre }}</td><td>{{ n.mensaje }}</td></tr>
+  {% else %}<tr><td colspan="3" class="suave">Sin notificaciones.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

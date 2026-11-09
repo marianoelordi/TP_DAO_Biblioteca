@@ -1,0 +1,20 @@
+{% macro estado(nombre) -%}
+  {%- set colores = {'Pendiente': 'ambar', 'Empaquetado': 'azul', 'Enviado': 'azul', 'Entregado': 'verde',
+                     'Confirmada': 'azul', 'Cumplida': 'verde', 'Cancelada': 'roja'} -%}
+  <span class="etiqueta {{ colores.get(nombre, '') }}">{{ nombre }}</span>
+{%- endmacro %}
+
+{% macro si_no(valor, si, no) -%}
+  <span class="etiqueta {{ 'verde' if valor else 'roja' }}">{{ si if valor else no }}</span>
+{%- endmacro %}
+
+{% macro campo(nombre, texto, datos, solo_lectura=false) -%}
+  <label>{{ texto }}
+    <input name="{{ nombre }}" value="{{ datos.get(nombre, '') }}" {{ 'readonly' if solo_lectura else 'required' }}>
+  </label>
+{%- endmacro %}
+
+{% macro ubicacion(ejemplar) -%}
+  {%- if ejemplar.ubicacion_actual is none -%}<span class="etiqueta azul">En tránsito</span>
+  {%- else -%}{{ ejemplar.ubicacion_actual.nombre }}{%- endif -%}
+{%- endmacro %}

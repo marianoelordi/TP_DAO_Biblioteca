@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "macros.html" import campo, si_no, ubicacion %}
+{% block titulo %}{{ libro.titulo }}{% endblock %}
+{% block contenido %}
+<h1>{{ libro.titulo }} <span class="suave">· {{ libro.autor }}</span></h1>
+<form class="panel grilla" method="post">
+  {{ campo('isbn', 'ISBN', datos, solo_lectura=true) }}
+  {{ campo('titulo', 'Título', datos) }}
+  {{ campo('autor', 'Autor', datos) }}
+  <div><button>Guardar cambios</button></div>
+</form>
+
+<h2>Ejemplares</h2>
+<div class="tabla"><table>
+  <tr><th>Código</th><th>Sede de pertenencia</th><th>Ubicación actual</th><th>Estado físico</th><th>Disponible</th></tr>
+  {% for e in ejemplares %}
+  <tr><td>{{ e.codigo }}</td><td>{{ e.sede_pertenencia.nombre }}</td><td>{{ ubicacion(e) }}</td>
+      <td>{{ e.estado_fisico }}</td><td>{{ si_no(e.disponible, 'Sí', 'No') }}</td></tr>
+  {% else %}<tr><td colspan="5" class="suave">Este libro no tiene ejemplares.</td></tr>{% endfor %}
+</table></div>
+
+<h2>Agregar ejemplar</h2>
+<form class="panel grilla" method="post" action="{{ url_for('ejemplar_nuevo', isbn=libro.isbn) }}">
+  <label>Código <input name="codigo" required></label>
+  <label>Sede de pertenencia
+    <select name="id_sede" required>
+      {% for s in sedes %}<option value="{{ s.id_sede }}">{{ s.nombre }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Estado físico
+    <select name="estado_fisico">{% for e in ESTADOS_FISICOS %}<option>{{ e }}</option>{% endfor %}</select>
+  </label>
+  <div><button>Agregar</button></div>
+</form>
+{% endblock %}

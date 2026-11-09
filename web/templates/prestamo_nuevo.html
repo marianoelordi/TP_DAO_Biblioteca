@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block titulo %}Nuevo préstamo{% endblock %}
+{% block contenido %}
+<h1>Nuevo préstamo</h1>
+<form class="panel grilla" method="get">
+  <label>1. Sede de origen (donde están los ejemplares)
+    <select name="origen" required>
+      <option value="">— Elegir —</option>
+      {% for s in sedes %}<option value="{{ s.id_sede }}" {{ 'selected' if s.id_sede == origen }}>{{ s.nombre }}</option>{% endfor %}
+    </select>
+  </label>
+  <div><button class="secundario">Ver ejemplares disponibles</button></div>
+</form>
+
+{% if origen %}
+<form class="panel" method="post">
+  <input type="hidden" name="origen" value="{{ origen }}">
+  <div class="grilla">
+    <label>2. Socio
+      <select name="numero_socio" required>
+        <option value="">— Elegir —</option>
+        {% for s in socios %}
+          <option value="{{ s.numero_socio }}" {{ 'selected' if s.numero_socio == datos.get('numero_socio') }}>
+            {{ s.numero_socio }} · {{ s.nombre }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>3. Sede de destino (retiro del socio)
+      <select name="destino" required>
+        {% for s in sedes %}
+          <option value="{{ s.id_sede }}" {{ 'selected' if s.id_sede == datos.get('destino', origen) }}>
+            {{ s.nombre }}{{ ' — préstamo local' if s.id_sede == origen else ' — interbibliotecario' }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+  <h2>4. Ejemplares disponibles en la sede de origen</h2>
+  <div class="tabla"><table>
+    <tr><th></th><th>Código</th><th>Título</th><th>Autor</th><th>Estado físico</th></tr>
+    {% for e in disponibles %}
+    <tr><td><input type="checkbox" name="ejemplares" value="{{ e.codigo }}"
+                   {{ 'checked' if e.codigo in datos.getlist('ejemplares') }}></td>
+        <td>{{ e.codigo }}</td><td>{{ e.libro.titulo }}</td><td>{{ e.libro.autor }}</td><td>{{ e.estado_fisico }}</td></tr>
+    {% else %}<tr><td colspan="5" class="suave">No hay ejemplares disponibles en esta sede.</td></tr>{% endfor %}
+  </table></div>
+  <p class="suave">Si el destino es otra sede se genera automáticamente el remito de envío.</p>
+  <button>Registrar préstamo</button>
+</form>
+{% endif %}
+{% endblock %}

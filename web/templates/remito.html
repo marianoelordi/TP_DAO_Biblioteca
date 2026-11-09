@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "macros.html" import estado, ubicacion %}
+{% block titulo %}Remito {{ r.numero_remito }}{% endblock %}
+{% block contenido %}
+<h1>Remito {{ r.numero_remito }} <span class="suave">· {{ r.tipo }}</span> {{ estado(r.estado.nombre) }}</h1>
+<div class="panel grilla">
+  <div><label>Préstamo</label>
+    <a href="{{ url_for('prestamo', id_prestamo=r.prestamo.id_prestamo) }}">N° {{ r.prestamo.id_prestamo }}</a>
+    · {{ r.prestamo.socio.nombre }}</div>
+  <div><label>Trayecto</label>{{ r.sede_origen.nombre }} → {{ r.sede_destino.nombre }}</div>
+  <div><label>Creación</label>{{ r.fecha_creacion|fecha }}</div>
+  <div><label>Empaquetado</label>{{ r.fecha_empaquetado|fecha }}</div>
+  <div><label>Despacho</label>{{ r.fecha_despacho|fecha }}</div>
+  <div><label>Recepción</label>{{ r.fecha_recepcion|fecha }}</div>
+</div>
+
+{% set siguiente = OPERACION_REMITO.get(r.estado.nombre) %}
+{% if siguiente %}
+<form class="panel grilla" method="post" action="{{ url_for('remito_operacion', numero=r.numero_remito, operacion=siguiente[0]) }}">
+  <label>Observación (opcional)<input name="observacion" placeholder="Ej.: sale en camión 3"></label>
+  <div><button>{{ siguiente[1] }}</button></div>
+</form>
+{% else %}
+<p class="suave">El remito fue entregado: su ciclo de vida terminó.</p>
+{% endif %}
+
+<h2>Ejemplares</h2>
+<div class="tabla"><table>
+  <tr><th>Código</th><th>Título</th><th>Ubicación actual</th></tr>
+  {% for e in r.prestamo.ejemplares() %}
+  <tr><td>{{ e.codigo }}</td><td>{{ e.libro.titulo }}</td><td>{{ ubicacion(e) }}</td></tr>
+  {% endfor %}
+</table></div>
+
+<h2>Trazabilidad</h2>
+<ul class="lineatiempo panel">
+  {% for h in r.historial %}
+  <li><strong>{{ h.nombre_estado }}</strong> · {{ h.fecha_hora|fecha }} ·
+      {{ h.sede_ubicacion.nombre if h.sede_ubicacion else 'En tránsito' }}
+      {% if h.observacion %}<div class="suave">{{ h.observacion }}</div>{% endif %}</li>
+  {% endfor %}
+</ul>
+{% endblock %}

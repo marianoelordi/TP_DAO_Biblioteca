@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "macros.html" import estado, ubicacion %}
+{% block titulo %}Préstamo {{ p.id_prestamo }}{% endblock %}
+{% block contenido %}
+<h1>Préstamo {{ p.id_prestamo }}
+  <span class="suave">· {{ 'Interbibliotecario' if p.es_interbibliotecario() else 'Local' }}</span></h1>
+<div class="panel grilla">
+  <div><label>Socio</label>{{ p.socio.numero_socio }} · {{ p.socio.nombre }}</div>
+  <div><label>Origen → Destino</label>{{ p.sede_origen.nombre }} → {{ p.sede_destino.nombre }}</div>
+  <div><label>Inicio</label>{{ p.fecha_inicio|fecha }}</div>
+  <div><label>Vencimiento</label>{{ p.fecha_vencimiento|fecha }}
+    {% if p.controlar_vencimiento() %}<span class="etiqueta roja">Vencido</span>{% endif %}</div>
+  <div><label>Multa a hoy</label>{{ multa|pesos }}</div>
+  <div><label>Estado</label>{% if p.esta_activo() %}<span class="etiqueta azul">Activo</span>
+    {% else %}<span class="etiqueta verde">Devuelto</span>{% endif %}</div>
+</div>
+
+{% if p.es_interbibliotecario() %}
+<h2>Remitos</h2>
+<div class="tabla"><table>
+  <tr><th>Remito</th><th>Tipo</th><th>Trayecto</th><th>Estado</th></tr>
+  {% for r in [p.remito, p.remito_retorno] if r %}
+  <tr><td><a href="{{ url_for('remito', numero=r.numero_remito) }}">{{ r.numero_remito }}</a></td><td>{{ r.tipo }}</td>
+      <td>{{ r.sede_origen.nombre }} → {{ r.sede_destino.nombre }}</td><td>{{ estado(r.estado.nombre) }}</td></tr>
+  {% endfor %}
+</table></div>
+{% if p.remito_retorno is none %}
+  <p class="suave">El remito de retorno se genera cuando el socio devuelve todos los ejemplares.</p>
+{% endif %}
+{% endif %}
+
+<h2>Ejemplares</h2>
+<div class="tabla"><table>
+  <tr><th>Código</th><th>Título</th><th>Ubicación</th><th>Devolución</th><th>Estado devuelto</th><th></th></tr>
+  {% for d in p.detalles %}
+  <tr>
+    <td>{{ d.ejemplar.codigo }}</td><td>{{ d.ejemplar.libro.titulo }}</td><td>{{ ubicacion(d.ejemplar) }}</td>
+    <td>{{ d.fecha_devolucion_real|fecha if d.fecha_devolucion_real else 'Pendiente' }}</td>
+    <td>{{ d.estado_fisico_devuelto or '—' }}</td>
+    <td>
+      {% if d.esta_pendiente() %}
+      <form class="acciones" method="post" action="{{ url_for('devolucion', id_prestamo=p.id_prestamo) }}">
+        <input type="hidden" name="codigo" value="{{ d.ejemplar.codigo }}">
+        <input type="date" name="fecha" value="{{ hoy.isoformat() }}" style="width:auto">
+        <select name="estado_fisico" style="width:auto">{% for e in ESTADOS_FISICOS %}<option>{{ e }}</option>{% endfor %}</select>
+        <button>Registrar devolución</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table></div>
+{% endblock %}

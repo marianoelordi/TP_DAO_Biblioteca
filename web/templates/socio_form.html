@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% from "macros.html" import campo %}
+{% block contenido %}
+<h1>{{ 'Editar socio ' ~ socio.numero_socio if socio else 'Nuevo socio' }}</h1>
+<form class="panel grilla" method="post">
+  {{ campo('numero_socio', 'Número de socio', datos, solo_lectura=socio is not none) }}
+  {{ campo('nombre', 'Nombre y apellido', datos) }}
+  <div class="acciones"><button>Guardar</button>
+    <a class="boton secundario" href="{{ url_for('socios') }}">Cancelar</a></div>
+</form>
+{% endblock %}

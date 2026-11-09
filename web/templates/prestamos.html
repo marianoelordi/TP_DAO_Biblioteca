@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block titulo %}Préstamos{% endblock %}
+{% block contenido %}
+<h1>Préstamos</h1>
+<div class="acciones">
+  <a class="boton" href="{{ url_for('prestamo_nuevo') }}">Nuevo préstamo</a>
+  {% if solo_activos %}<a class="boton secundario" href="{{ url_for('prestamos', todos=1) }}">Ver todos</a>
+  {% else %}<a class="boton secundario" href="{{ url_for('prestamos') }}">Ver solo activos</a>{% endif %}
+</div>
+<h2>{{ 'Préstamos activos' if solo_activos else 'Todos los préstamos' }}</h2>
+<div class="tabla"><table>
+  <tr><th>N°</th><th>Tipo</th><th>Socio</th><th>Origen → Destino</th><th>Inicio</th><th>Vencimiento</th>
+      <th class="num">Ejemplares</th><th>Estado</th></tr>
+  {% for p in prestamos %}
+  <tr>
+    <td><a href="{{ url_for('prestamo', id_prestamo=p.id_prestamo) }}">{{ p.id_prestamo }}</a></td>
+    <td>{{ 'Interbibliotecario' if p.es_interbibliotecario() else 'Local' }}</td>
+    <td>{{ p.socio.nombre }}</td><td>{{ p.sede_origen.nombre }} → {{ p.sede_destino.nombre }}</td>
+    <td>{{ p.fecha_inicio|fecha }}</td><td>{{ p.fecha_vencimiento|fecha }}</td>
+    <td class="num">{{ p.detalles|length }}</td>
+    <td>{% if p.controlar_vencimiento() %}<span class="etiqueta roja">Vencido</span>
+        {% elif p.esta_activo() %}<span class="etiqueta azul">Activo</span>
+        {% else %}<span class="etiqueta verde">Devuelto</span>{% endif %}</td>
+  </tr>
+  {% else %}<tr><td colspan="8" class="suave">No hay préstamos.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}
