@@ -2,15 +2,13 @@ import unittest
 from datetime import date, timedelta
 
 from biblioteca import reportes, servicios as sv
-from biblioteca.configuracion import Configuracion
 from biblioteca.excepciones import ReglaNegocioError
-from biblioteca.modelos import Entregado, Pendiente
+from biblioteca.modelos import Entregado, Pendiente, PrestamoInterbibliotecario, PrestamoLocal
 from biblioteca.persistencia import Repositorio, conectar
 
 
 class Base(unittest.TestCase):
     def setUp(self):
-        Configuracion.reiniciar()
         self.con = conectar(":memory:")
         repo = Repositorio(self.con)
         sv.alta_sede(repo, "S1", "Centro", "Av. Colón 100", "351-111", "8 a 20")
@@ -23,7 +21,6 @@ class Base(unittest.TestCase):
 
     def tearDown(self):
         self.con.close()
-        Configuracion.reiniciar()
 
     def repo(self):
         """Repositorio nuevo: obliga a releer todo desde la base."""
@@ -113,6 +110,15 @@ class TestPersistencia(Base):
         self.assertEqual([e.codigo for e in sv.consultar_disponibilidad(self.repo(), "S1")], ["EJ-2"])
         sv.registrar_devolucion(self.repo(), p.id_prestamo, "EJ-1", "Bueno")
         self.assertEqual(len(sv.consultar_disponibilidad(self.repo(), "S1", "978-1")), 2)
+
+    def test_tipo_de_prestamo_y_plazo_segun_sedes(self):
+        hoy = date.today()
+        local = sv.registrar_prestamo(self.repo(), "1001", "S1", "S1", ["EJ-1"], hoy)
+        self.assertIsInstance(local, PrestamoLocal)
+        self.assertEqual(local.fecha_vencimiento, hoy + timedelta(days=14))
+        inter = self.interbibliotecario(["EJ-2"], hoy)
+        self.assertIsInstance(inter, PrestamoInterbibliotecario)
+        self.assertEqual(inter.fecha_vencimiento, hoy + timedelta(days=21))
 
     def test_sede_de_baja_y_socio_inhabilitado(self):
         sv.cambiar_estado_sede(self.repo(), "S2", False)

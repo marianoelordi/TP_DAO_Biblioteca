@@ -14,7 +14,6 @@ from biblioteca.modelos import (
     Pendiente, PrestamoInterbibliotecario, PrestamoLocal, Remito, Reserva, ReservaCancelada,
     ReservaConfirmada, ReservaCumplida, ReservaPendiente, Sede, Socio,
 )
-from biblioteca.observador import Sujeto
 
 ESTADOS_REMITO = {c.nombre: c for c in (Pendiente, Empaquetado, Enviado, Entregado)}
 ESTADOS_RESERVA = {c.nombre: c for c in (ReservaPendiente, ReservaConfirmada,
@@ -259,7 +258,6 @@ class Repositorio:
         if f is None:
             return None
         r = Remito.__new__(Remito)
-        Sujeto.__init__(r)
         r.numero_remito = f["numero_remito"]
         r.prestamo = prestamo
         r.tipo = f["tipo"]
@@ -336,12 +334,10 @@ class Repositorio:
                           _iso(r.fecha_reserva), r.estado.nombre))
         self._reservas[r.id_reserva] = r
 
-    # ---- Notificaciones (Observer) ----------------------------------------------
-    def guardar_notificaciones(self, notificador):
-        for socio, mensaje in notificador.notificaciones:
-            self.con.execute("INSERT INTO notificacion (numero_socio, fecha_hora, mensaje) VALUES (?, ?, ?)",
-                             (socio.numero_socio, datetime.now().isoformat(timespec="seconds"), mensaje))
-        notificador.notificaciones.clear()
+    # ---- Notificaciones ---------------------------------------------------------
+    def agregar_notificacion(self, socio, mensaje):
+        self.con.execute("INSERT INTO notificacion (numero_socio, fecha_hora, mensaje) VALUES (?, ?, ?)",
+                         (socio.numero_socio, datetime.now().isoformat(timespec="seconds"), mensaje))
 
     def notificaciones(self, limite=100):
         return self.con.execute("SELECT n.*, s.nombre FROM notificacion n JOIN socio s USING (numero_socio) "

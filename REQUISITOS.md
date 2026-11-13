@@ -12,7 +12,7 @@ Capas: dominio (`biblioteca/modelos`), casos de uso (`biblioteca/servicios.py`),
 | RF01 | Administrar sedes: dirección, contacto, horarios, estado activo/baja | T1, P | ✅ ABM web `/sedes` |
 | RF02 | Administrar socios (alta, modificación, habilitar/inhabilitar) | T2, P | ✅ ABM web `/socios` |
 | RF03 | Administrar catálogo de libros y ejemplares, indicando la sede de cada ejemplar | T3, P | ✅ ABM web `/libros` (ejemplares dentro de cada libro) |
-| RF04 | Registrar préstamos locales e interbibliotecarios (sede origen y destino) | T4, P | ✅ `FabricaPrestamos` + `/prestamos/nuevo`; el interbibliotecario genera su remito al registrarse |
+| RF04 | Registrar préstamos locales e interbibliotecarios (sede origen y destino) | T4, P | ✅ `servicios.registrar_prestamo` + `/prestamos/nuevo`; el interbibliotecario genera su remito al registrarse |
 | RF05 | Empaquetar, despachar y recibir ejemplares con remito y trazabilidad por estados | T5, P | ✅ `Remito` + estados + `HistorialRemito`; `/remitos`. Incluye remito de retorno destino → origen |
 | RF06 | Consultar disponibilidad | T6 | ✅ `/disponibilidad` (usa `IteradorEjemplaresDisponibles`) |
 | RF07 | Gestionar reservas (registrar, confirmar, cancelar, cumplir) | T7, P | ✅ `Reserva` + estados; `/reservas` |
@@ -45,7 +45,7 @@ Capas: dominio (`biblioteca/modelos`), casos de uso (`biblioteca/servicios.py`),
 | ID | Reporte | Fuente | Estado |
 |----|---------|--------|--------|
 | RR01 | Préstamos activos y material en tránsito | T | ✅ `/reportes` |
-| RR02 | Préstamos vencidos y multas acumuladas | T | ✅ (por préstamo y por socio, con la estrategia configurada) |
+| RR02 | Préstamos vencidos y multas acumuladas | T | ✅ (por préstamo y por socio, $100 por día y ejemplar) |
 | RR03 | Libros más solicitados para préstamos inter-sedes | T | ✅ |
 | RR04 | Disponibilidad de catálogo por sede | T | ✅ |
 | RR05 | Tasa de envíos logísticos exitosos e incidencias | T | ⬜ requiere modelar incidencias (RO05) |
@@ -55,7 +55,7 @@ Capas: dominio (`biblioteca/modelos`), casos de uso (`biblioteca/servicios.py`),
 
 | ID | Requisito | Estado |
 |----|-----------|--------|
-| RO01 | Envío de notificaciones | 🟡 `NotificadorSocio` observa remitos; se guardan en la tabla `notificacion` y se ven en `/notificaciones` (sin mail real) |
+| RO01 | Envío de notificaciones | 🟡 `servicios.avanzar_remito` genera un aviso en cada cambio de estado del remito; se guardan en la tabla `notificacion` y se ven en `/notificaciones` (sin mail real) |
 | RO02 | Historial de lecturas | ⬜ |
 | RO03 | Recomendaciones | ⬜ |
 | RO04 | Inventario con códigos | ⬜ |
@@ -78,14 +78,10 @@ Capas: dominio (`biblioteca/modelos`), casos de uso (`biblioteca/servicios.py`),
 | State | `Remito` (`estados_remito.py`) | Operaciones permitidas según la etapa del envío |
 | State | `Reserva` (`estados_reserva.py`) | Ciclo Pendiente → Confirmada → Cumplida / Cancelada |
 | Iterator | `Catalogo` → `IteradorEjemplares`, `IteradorEjemplaresDisponibles` | Recorrer el catálogo (completo o disponibles por sede) sin exponer la lista |
-| Strategy | `EstrategiaMulta` (`multas.py`) | Cálculo de multa intercambiable: `SinMulta`, `MultaPorDia`, `MultaConTope` |
-| Singleton | `Configuracion` | Plazos de préstamo y estrategia de multa únicos para todo el sistema |
-| Factory | `FabricaPrestamos` | Elegir `PrestamoLocal` / `PrestamoInterbibliotecario` y calcular el vencimiento |
-| Observer | `Remito` (Sujeto) → `NotificadorSocio` | Avisar al socio en cada cambio de estado del envío |
 
 ## 6. Decisiones abiertas
 
 1. ~~Interfaz~~: web con Flask. ~~Persistencia~~: SQLite.
 2. ~~Regreso del ejemplar~~: sí, con un remito de retorno (destino → origen) que se genera cuando el socio devolvió **todos** los ejemplares del préstamo; el ejemplar vuelve a estar disponible al recibirse en su sede.
-3. **Diagrama de clases**: falta reflejar `Remito.tipo` (Ida/Retorno), `PrestamoInterbibliotecario.remito_retorno` y los patrones agregados después (Strategy, Singleton, Factory, Observer).
+3. **Diagrama de clases**: falta reflejar `Remito.tipo` (Ida/Retorno), `PrestamoInterbibliotecario.remito_retorno`, la jerarquía de estados de `Reserva` e `IteradorEjemplaresDisponibles`.
 4. **Valores de negocio**: plazos (14 y 21 días) y multa ($100 por día y ejemplar) son provisorios.

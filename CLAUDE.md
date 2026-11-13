@@ -19,11 +19,10 @@ Python 3.13. Only dependency: Flask (`pip install -r requirements.txt`); the dom
 - `biblioteca/excepciones.py` — `ReglaNegocioError`, the single exception raised for every business-rule violation (the diagram's `Boolean` validators raise this instead, so the message reaches the user).
 - `biblioteca/modelos/` — one module per diagram class. Method names are the diagram's names in snake_case (`esta_habilitado`, `has_next`, …).
 - `REQUISITOS.md` — full requirements list with IDs and implementation status, plus the pattern → class map. Keep its status column up to date when implementing something.
-- All six course patterns are applied: State (`estados_remito.py`, `estados_reserva.py`), Iterator (`catalogo.py`), Strategy (`multas.py`), Singleton (`biblioteca/configuracion.py`), Factory (`modelos/fabrica_prestamos.py`), Observer (`biblioteca/observador.py` + `notificaciones.py`; `Remito` is the Sujeto).
-- `Prestamo` is abstract; concrete types are `PrestamoLocal` / `PrestamoInterbibliotecario`, normally created via `FabricaPrestamos`. `Prestamo.__init__` runs `validar_condiciones` and marks ejemplares as prestados, so an invalid loan can never exist. Remitos are created only via `PrestamoInterbibliotecario.generar_remito()`.
-- `Prestamo.calcular_multa(estrategia, fecha)` takes the strategy as a parameter (Strategy is chosen externally, usually `Configuracion().estrategia_multa`), which also keeps `modelos` free of a dependency on `configuracion`.
-- Import cycle to avoid: `configuracion` imports `modelos.multas`, so `modelos/__init__.py` must not import `fabrica_prestamos` (which imports `configuracion`).
-- `Configuracion` is a Singleton: tests that touch it call `Configuracion.reiniciar()` in `setUp`/`tearDown`.
+- Only two patterns are applied, by design: State (`estados_remito.py`, `estados_reserva.py`) and Iterator (`catalogo.py`). Strategy, Singleton, Factory and Observer were deliberately removed — don't reintroduce them.
+- `Prestamo` is abstract; concrete types are `PrestamoLocal` / `PrestamoInterbibliotecario`, created by `servicios.registrar_prestamo` (local if origen is destino), with vencimiento = inicio + the subclass's `PLAZO_DIAS` (14 / 21). `Prestamo.__init__` runs `validar_condiciones` and marks ejemplares as prestados, so an invalid loan can never exist. Remitos are created only via `PrestamoInterbibliotecario.generar_remito()`.
+- `Prestamo.calcular_multa(fecha)` charges `Prestamo.MULTA_POR_DIA` ($100) per day late per ejemplar.
+- Notificaciones al socio: `servicios.avanzar_remito` writes one row to `notificacion` (via `Repositorio.agregar_notificacion`) after each valid remito transition.
 - Uniqueness of sedes, socios, libros, ejemplares and remito numbers is enforced by `Repositorio.agregar_*` (friendly `ReglaNegocioError`) with PRIMARY KEY/UNIQUE as backstop.
 - `Repositorio` keeps an identity map (the domain compares sedes with `is`) and rebuilds persisted objects with `__new__`, bypassing constructor validations. Create one per request/transaction.
 - `servicios.py` never commits; the caller (web `ejecutar` helper, tests) commits or rolls back.

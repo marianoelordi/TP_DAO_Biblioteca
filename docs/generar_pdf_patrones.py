@@ -243,10 +243,11 @@ def portada():
 
 def introduccion():
     s = h1("1. Introducción")
-    s += [p("La consigna exige aplicar <b>al menos dos patrones de diseño</b>. El sistema aplica <b>seis</b> "
-            "(State se usa dos veces): cada uno resuelve un problema concreto del dominio de la biblioteca, "
-            "no se agregó ninguno «para cumplir». Este documento explica, para cada patrón, qué problema "
-            "resuelve en el TP, cómo se implementó y por qué se eligió."),
+    s += [p("La consigna exige aplicar <b>al menos dos patrones de diseño</b>. El sistema aplica <b>State</b> "
+            "(en dos lugares: el ciclo de vida del remito y el de la reserva) e <b>Iterator</b> (el recorrido "
+            "del catálogo). Son los patrones que el grupo definió en el diagrama de clases, y cada uno "
+            "resuelve un problema concreto del dominio de la biblioteca. Este documento explica, para cada "
+            "uno, qué problema resuelve en el TP, cómo se implementó y por qué se eligió."),
           p("Cada patrón se presenta con el esquema de la cátedra: <b>problema</b>, <b>solución</b> "
             "(qué clase cumple cada rol del patrón), <b>implementación</b> (extractos reales del código con "
             "archivo y número de línea), <b>justificación</b>, <b>consecuencias</b> y <b>verificación</b> "
@@ -260,20 +261,12 @@ def introduccion():
          "Ciclo de una reserva: confirmar, cumplir o cancelar según corresponda."],
         ["Iterator", "Comportamiento", "Catalogo, Iterador, IteradorEjemplares, IteradorEjemplaresDisponibles",
          "Recorrer el catálogo completo o solo lo disponible de una sede, sin exponer la colección."],
-        ["Strategy", "Comportamiento", "EstrategiaMulta, SinMulta, MultaPorDia, MultaConTope",
-         "Política de multas por atraso intercambiable sin modificar Prestamo."],
-        ["Singleton", "Creacional", "Configuracion",
-         "Plazos de préstamo y política de multas únicos para todo el sistema."],
-        ["Factory", "Creacional", "FabricaPrestamos, Prestamo, PrestamoLocal, PrestamoInterbibliotecario",
-         "Crear el tipo de préstamo correcto y su vencimiento sin que el cliente conozca las subclases."],
-        ["Observer", "Comportamiento", "Sujeto, Observador, Remito, NotificadorSocio",
-         "Avisar al socio en cada cambio de estado de su envío sin acoplar el remito al canal de aviso."],
     ], [1.8, 2.9, 5.4, 6.9])
     s += h2("Dónde están los patrones")
     s += [p(f"El sistema está organizado en capas: el <b>dominio</b> ({c('biblioteca/modelos/')}), los "
             f"<b>casos de uso</b> ({c('biblioteca/servicios.py')}), la <b>persistencia</b> en SQLite "
             f"({c('biblioteca/persistencia/')}), los <b>reportes</b> ({c('biblioteca/reportes.py')}) y la "
-            f"<b>interfaz web</b> con Flask ({c('web/')}). Todos los patrones viven en el dominio y no dependen "
+            f"<b>interfaz web</b> con Flask ({c('web/')}). Los dos patrones viven en el dominio y no dependen "
             "de Flask ni de SQLite: por eso se prueban con tests unitarios sin base de datos. Los casos de "
             "uso los combinan, y la interfaz web nunca crea clases concretas del dominio por su cuenta.")]
     return s
@@ -297,7 +290,7 @@ def state_remito():
     s += tabla([
         ["Rol del patrón", "Clase", "Responsabilidad"],
         ["Contexto", "Remito (remito.py)", "Guarda el estado actual en _estado y delega empaquetar(), "
-         "despachar() y recibir(). Expone cambiar_estado(), que registra el historial y notifica."],
+         "despachar() y recibir(). Expone cambiar_estado(), que registra el historial."],
         ["Estado (interfaz)", "EstadoRemito (estados_remito.py)", "Clase abstracta que declara las tres "
          "operaciones; _rechazar() centraliza el error."],
         ["Estados concretos", "Pendiente, Empaquetado, Enviado, Entregado", "Cada uno implementa la única "
@@ -315,9 +308,8 @@ def state_remito():
                     "historial el estado inicial Pendiente.", E["nota"])]
     s += h2("Implementación")
     s += [pc("El contexto no decide nada: solo delega en el objeto estado. Todas las transiciones pasan por "
-            f"{c('cambiar_estado()')}, que agrega la entrada de historial y notifica a los observadores "
-            "(ver sección 8).")]
-    s += codigo("biblioteca/modelos/remito.py", 58, 73, "self._estado.empaquetar(self, observacion)")
+            f"{c('cambiar_estado()')}, que agrega la entrada de historial.")]
+    s += codigo("biblioteca/modelos/remito.py", 55, 69, "self._estado.empaquetar(self, observacion)")
     s += [pc("La interfaz del estado y el estado inicial. Pendiente solo acepta empaquetar(); las otras dos "
             "operaciones se rechazan con un mensaje para el usuario:")]
     s += codigo("biblioteca/modelos/estados_remito.py", 14, 45, "class EstadoRemito(ABC):")
@@ -334,7 +326,7 @@ def state_remito():
           p("El préstamo también consulta el estado del remito: la devolución solo se admite cuando el "
             "remito de ida ya está Entregado, y el retorno solo se genera cuando no quedan ejemplares "
             "pendientes:")]
-    s += codigo("biblioteca/modelos/prestamo.py", 144, 157, "def generar_remito_retorno(self, numero_remito):")
+    s += codigo("biblioteca/modelos/prestamo.py", 149, 162, "def generar_remito_retorno(self, numero_remito):")
     s += h2("Justificación")
     s += vinetas([
         "<b>Cada regla está en un solo lugar.</b> Para saber qué pasa si se intenta despachar un remito "
@@ -358,7 +350,7 @@ def state_remito():
         f"{c('_rechazar()')} en la clase base). Cada estado conoce a su sucesor; es aceptable porque el "
         "flujo es lineal y fijo.",
         "<b>Persistencia:</b> en la base se guarda el nombre del estado y el Repositorio reconstruye el "
-        "objeto estado correspondiente (ver sección 10).",
+        "objeto estado correspondiente (ver sección 6).",
     ])
     s += h2("Verificación")
     s += [p(f"{c('test_ciclo_completo_con_trazabilidad_y_ubicacion')}, {c('test_transiciones_no_permitidas')}, "
@@ -458,219 +450,29 @@ def iterator():
     return s
 
 
-def strategy():
-    s = h1("5. Strategy — Cálculo de multas")
-    s += h2("Problema")
-    s += [p("Controlar los vencimientos (RN03) implica cobrar multas por atraso, pero la consigna no fija la "
-            "política y los valores actuales son provisorios. Las opciones razonables son varias: no cobrar "
-            "(por ejemplo, durante un período de gracia), un monto por día y por ejemplar, o un monto por día "
-            f"con un tope. Con <i>if/elif</i> dentro de {c('Prestamo')}, cada política nueva obligaría a "
-            "modificar una de las clases centrales del dominio.")]
-    s += h2("Solución")
-    s += tabla([
-        ["Rol del patrón", "Clase", "Responsabilidad"],
-        ["Estrategia (interfaz)", "EstrategiaMulta", "Declara calcular(dias_atraso)."],
-        ["Estrategias concretas", "SinMulta, MultaPorDia, MultaConTope", "Cada una implementa una política; "
-         "los montos se configuran por constructor."],
-        ["Contexto", "Prestamo.calcular_multa(estrategia, fecha)", "Calcula los días de atraso de cada "
-         "ejemplar y delega el monto en la estrategia recibida."],
-        ["Quién elige", "Configuracion().estrategia_multa", "La estrategia vigente se define en un único "
-         "lugar (Singleton, sección 6)."],
-    ], [3.4, 5.4, 8.2])
-    s += h2("Implementación")
-    s += codigo("biblioteca/modelos/multas.py", 9, 36, "class EstrategiaMulta(ABC):")
-    s += [pc("El contexto usa polimorfismo: invoca " + c("estrategia.calcular(...)") + " sin preguntar de qué "
-            "clase concreta se trata, igual que en la guía de la cátedra:")]
-    s += codigo("biblioteca/modelos/prestamo.py", 108, 113, "def calcular_multa(self, estrategia, fecha=None):")
-    s += [pc("Un cliente, el reporte de préstamos vencidos y multas, toma la estrategia de la configuración:")]
-    s += codigo("biblioteca/reportes.py", 28, 33, "estrategia = Configuracion().estrategia_multa")
-    s += h2("Justificación")
-    s += vinetas([
-        "<b>Responsabilidades separadas:</b> el préstamo sabe <i>cuántos días</i> se atrasó cada ejemplar "
-        "(si ya se devolvió, cuenta hasta la fecha real de devolución); la estrategia sabe <i>cuánto cuesta</i> "
-        "ese atraso.",
-        "<b>Abierto a extensión:</b> una política nueva es una clase nueva; Prestamo, los reportes y la web "
-        "no cambian.",
-        "<b>La estrategia se recibe como parámetro</b> en lugar de leerse adentro del préstamo: así "
-        f"{c('Prestamo')} no depende de {c('Configuracion')} (lo que además evita un import circular) y cada "
-        "estrategia se puede probar con el mismo préstamo.",
-    ])
-    s += h2("Consecuencias")
-    s += vinetas([
-        "<b>Ventajas:</b> la política vigente se cambia en una sola línea de la configuración.",
-        "<b>Desventajas:</b> quien calcula la multa debe pasar la estrategia; en el sistema siempre se toma "
-        "de la configuración, de modo que el criterio es uniforme.",
-    ])
-    s += h2("Verificación")
-    s += [p(f"{c('test_sin_atraso_no_hay_multa')}, {c('test_estrategias_intercambiables')} (el mismo préstamo "
-            f"da $1000, $600 o $0 según la estrategia), {c('test_ejemplar_devuelto_deja_de_acumular')}, "
-            f"{c('test_estrategia_tomada_de_la_configuracion')} y {c('test_reportes')}.")]
-    return s
-
-
-def singleton():
-    s = h1("6. Singleton — Configuración del sistema")
-    s += h2("Problema")
-    s += [p("Los plazos de préstamo (14 días el local y 21 el interbibliotecario) y la política de multas son "
-            "parámetros de todo el sistema: los usan la fábrica de préstamos, los reportes y la interfaz web. "
-            "Si cada módulo creara su propia configuración, un cambio en una no se vería en las otras, y un "
-            "préstamo podría vencer con un plazo y cobrarse la multa con otra política.")]
-    s += h2("Solución")
-    s += [pc(f"{c('Configuracion')} garantiza una única instancia con un único punto de acceso: cualquier "
-            f"llamada a {c('Configuracion()')} devuelve el mismo objeto.")]
-    s += codigo("biblioteca/configuracion.py", 9, 30, "class Configuracion:")
-    s += h2("Justificación")
-    s += vinetas([
-        "<b>Adaptación a Python:</b> la cátedra describe el patrón como «ocultar el constructor y crear un "
-        "método estático que guarde la instancia». Python no tiene constructores privados; el equivalente "
-        f"es redefinir {c('__new__')}, que es quien crea el objeto: la primera vez lo crea y lo guarda en "
-        f"{c('_instancia')}, y las siguientes devuelve el guardado.",
-        f"<b>La bandera {c('_inicializada')} es necesaria</b> porque Python ejecuta {c('__init__')} en cada "
-        f"llamada a {c('Configuracion()')}; sin ella, cada acceso volvería los valores a los de fábrica y se "
-        "perderían los cambios.",
-        f"<b>{c('reiniciar()')}</b> existe solo para los tests: cada test empieza con una configuración limpia "
-        f"({c('setUp')}/{c('tearDown')}).",
-        "<b>Dónde se decidió no aplicarlo:</b> la conexión a la base de datos <i>no</i> es un Singleton. "
-        "Flask atiende cada petición en un hilo y una conexión sqlite3 no puede compartirse entre hilos, así "
-        "que cada petición abre y cierra la suya.",
-    ])
-    s += h2("Consecuencias")
-    s += vinetas([
-        "<b>Ventajas:</b> consistencia garantizada y un único lugar para ajustar los valores de negocio.",
-        "<b>Desventajas:</b> es estado global, lo que obliga a reiniciarlo entre tests. La creación no está "
-        "protegida para hilos; en el peor caso dos hilos crearían instancias con los mismos valores por "
-        "defecto, un riesgo aceptable para este sistema.",
-    ])
-    s += h2("Verificación")
-    s += [p(f"{c('test_misma_instancia_y_estado_compartido')}, {c('test_crea_prestamo_local_con_plazo_configurado')} "
-            f"y {c('test_crea_prestamo_interbibliotecario_con_plazo_configurado')}.")]
-    return s
-
-
-def factory():
-    s = h1("7. Factory — Creación de préstamos")
-    s += h2("Problema")
-    s += [p("Hay dos tipos de préstamo con reglas distintas. El <b>local</b> (misma sede) nunca genera remito y "
-            "vence a los 14 días; el <b>interbibliotecario</b> exige sedes distintas, necesita un remito antes "
-            "del despacho (RN11) y vence a los 21 días. Quien registra un préstamo (el formulario web) solo "
-            "conoce el socio, la sede de origen, la de destino y los ejemplares. Si cada cliente decidiera qué "
-            "clase instanciar y calculara el vencimiento, esa lógica se repetiría.")]
-    s += h2("Solución")
-    s += tabla([
-        ["Rol del patrón", "Clase", "Responsabilidad"],
-        ["Producto abstracto", "Prestamo (ABC)", "Funcionalidad común: validaciones, detalles, vencimiento, "
-         "multa. es_interbibliotecario() es abstracto."],
-        ["Productos concretos", "PrestamoLocal, PrestamoInterbibliotecario", "Reglas propias de cada tipo; solo "
-         "el interbibliotecario genera remitos."],
-        ["Fábrica", "FabricaPrestamos.crear_prestamo()", "Elige la clase concreta y calcula el vencimiento con "
-         "el plazo de la configuración."],
-        ["Cliente", "servicios.registrar_prestamo", "Pide un préstamo y lo usa a través de la interfaz común."],
-    ], [3.4, 5.4, 8.2])
-    s += h2("Implementación")
-    s += codigo("biblioteca/modelos/fabrica_prestamos.py", 13, 23, "class FabricaPrestamos:")
-    s += [pc("El cliente no menciona ninguna subclase: trabaja con lo que devuelve la fábrica a través de la "
-            "interfaz común de Prestamo:")]
-    s += codigo("biblioteca/servicios.py", 92, 103, "FabricaPrestamos.crear_prestamo(")
-    s += h2("Justificación")
-    s += vinetas([
-        "<b>El cliente no depende de las clases concretas</b>, que es el concepto clave del patrón según la "
-        "cátedra: «encapsula la lógica de instanciación». Si mañana hubiera un tercer tipo de préstamo, "
-        "cambiaría la fábrica, no los clientes.",
-        "<b>Un solo criterio de decisión</b> (¿origen y destino son la misma sede?) y un solo lugar donde se "
-        "calcula el vencimiento.",
-        "<b>Combina dos patrones:</b> la fábrica toma los plazos del Singleton Configuracion.",
-        "<b>Préstamos inválidos imposibles:</b> el constructor de Prestamo valida todas las reglas (socio "
-        "habilitado, ejemplares disponibles y de la sede de origen, sedes activas) antes de crear el objeto.",
-    ])
-    s += h2("Consecuencias y alcance")
-    s += vinetas([
-        "<b>Variante aplicada:</b> se implementó una <i>fábrica simple</i> (un método de creación), no la "
-        "jerarquía completa de fábricas abstractas y concretas de la presentación de la cátedra. Con dos "
-        "productos y un único criterio, una jerarquía de fábricas agregaría clases sin beneficio. Si "
-        "aparecieran más tipos de préstamo, se puede evolucionar a una fábrica abstracta con "
-        f"{c('FabricaPrestamoLocal')} y {c('FabricaPrestamoInterbibliotecario')} sin tocar a los clientes.",
-        "<b>Desventaja:</b> el método de la fábrica cambia cada vez que se agrega un tipo de préstamo.",
-    ])
-    s += h2("Verificación")
-    s += [p(f"{c('test_crea_prestamo_local_con_plazo_configurado')}, "
-            f"{c('test_crea_prestamo_interbibliotecario_con_plazo_configurado')}, "
-            f"{c('test_interbibliotecario_exige_sedes_distintas')} y {c('test_prestamo_local_no_genera_remito')}.")]
-    return s
-
-
-def observer():
-    s = h1("8. Observer — Notificaciones al socio")
-    s += h2("Problema")
-    s += [p("Entre los procesos opcionales está el envío de notificaciones: el socio quiere enterarse cuando su "
-            f"material se empaqueta, se despacha y llega. Si {c('Remito')} llamara directamente a un "
-            "notificador, el dominio quedaría atado a un canal concreto (mail, pantalla, base de datos), y "
-            "agregar otro canal obligaría a modificar el remito.")]
-    s += h2("Solución")
-    s += tabla([
-        ["Rol del patrón", "Clase", "Responsabilidad"],
-        ["Sujeto", "Sujeto (observador.py)", "Mantiene la lista de observadores: agregar, quitar y notificar."],
-        ["Sujeto concreto", "Remito", "Hereda de Sujeto y notifica en cada cambio de estado."],
-        ["Observador (interfaz)", "Observador", "Declara actualizar(sujeto)."],
-        ["Observador concreto", "NotificadorSocio", "Arma el mensaje para el socio del préstamo."],
-        ["Suscripción y canal", "servicios.avanzar_remito, Repositorio", "Suscribe el notificador, ejecuta la "
-         "operación y guarda los avisos en la tabla notificacion (página «Notificaciones» de la web)."],
-    ], [3.4, 5.4, 8.2])
-    s += h2("Implementación")
-    s += codigo("biblioteca/observador.py", 6, 25, "class Observador(ABC):")
-    s += codigo("biblioteca/notificaciones.py", 4, 19, "class NotificadorSocio(Observador):")
-    s += [pc("<b>Punto de unión con State:</b> la notificación se dispara dentro de " + c("cambiar_estado()") +
-            ", que solo se ejecuta cuando una transición fue válida:")]
-    s += codigo("biblioteca/modelos/remito.py", 67, 70, "self.notificar()")
-    s += codigo("biblioteca/servicios.py", 106, 117, "remito.agregar_observador(notificador)")
-    s += h2("Justificación")
-    s += vinetas([
-        "<b>Desacoplamiento uno a muchos:</b> el remito no sabe quién lo observa ni qué hace con el aviso. "
-        "Un canal nuevo (por ejemplo, un mail real) es otra clase Observador, sin modificar el remito.",
-        "<b>Se notifica exactamente lo que ocurrió:</b> como la notificación está en el único punto por el "
-        "que pasan las transiciones válidas, los intentos rechazados por el State no generan avisos.",
-        "<b>El dominio no conoce la base de datos:</b> el observador acumula los mensajes y es el caso de "
-        "uso el que los guarda con el Repositorio.",
-    ])
-    s += h2("Consecuencias")
-    s += vinetas([
-        "<b>Ventajas:</b> se pueden sumar o quitar canales de aviso en tiempo de ejecución.",
-        "<b>Desventajas:</b> las suscripciones son objetos en memoria y no se guardan en la base, por eso el "
-        "caso de uso suscribe el observador en cada operación. Los observadores se notifican en el orden en "
-        "que se suscribieron.",
-    ])
-    s += h2("Verificación")
-    s += [p(f"{c('test_socio_notificado_en_cada_cambio_de_estado')}, {c('test_observador_quitado_no_recibe_mas')}, "
-            f"{c('test_transicion_rechazada_no_notifica')} y {c('test_ciclo_completo_con_retorno_y_notificaciones')} "
-            "(seis avisos: tres de la ida y tres del retorno).")]
-    return s
-
-
 def colaboracion():
-    s = h1("9. Cómo colaboran los patrones en un caso de uso")
+    s = h1("5. Cómo colaboran los patrones en un caso de uso")
     s += [p("Los patrones no están aislados. Este es el recorrido de un préstamo interbibliotecario completo, "
             "tal como se ejecuta desde la interfaz web:")]
     s += tabla([
         ["Paso", "Qué ocurre", "Patrones"],
         ["1. Consultar disponibilidad", "El formulario lista los ejemplares disponibles de la sede de origen.",
          "Iterator"],
-        ["2. Registrar préstamo", "La fábrica elige PrestamoInterbibliotecario con vencimiento a 21 días; el "
-         "constructor valida las reglas; se genera el remito en estado Pendiente con su primera entrada de "
-         "historial.", "Factory, Singleton, State"],
-        ["3. Empaquetar, despachar, recibir", "El caso de uso suscribe el NotificadorSocio; el estado actual "
-         "decide si la operación es válida y ejecuta sus efectos; cada transición notifica al socio.",
-         "State, Observer"],
+        ["2. Registrar préstamo", "Como las sedes son distintas, se crea un PrestamoInterbibliotecario con "
+         "vencimiento a 21 días; el constructor valida las reglas; se genera el remito en estado Pendiente "
+         "con su primera entrada de historial.", "State"],
+        ["3. Empaquetar, despachar, recibir", "El estado actual decide si la operación es válida y ejecuta sus "
+         "efectos; cada transición queda registrada en el historial del remito.", "State"],
         ["4. Devolución", "Solo se admite si el remito de ida está Entregado; el ejemplar sigue no disponible. "
          "Al devolver todo se genera el remito de retorno.", "State"],
         ["5. Retorno", "El remito de retorno recorre los mismos estados; al recibirse, los ejemplares quedan "
-         "disponibles en su sede y vuelven a aparecer en el paso 1.", "State, Observer, Iterator"],
-        ["6. Reportes", "Las multas de préstamos vencidos se calculan con la estrategia configurada.",
-         "Strategy, Singleton"],
+         "disponibles en su sede y vuelven a aparecer en el paso 1.", "State, Iterator"],
     ], [3.6, 10.2, 3.2])
     return s
 
 
 def complementos():
-    s = h1("10. Técnicas complementarias")
+    s = h1("6. Técnicas complementarias")
     s += [p("No son patrones exigidos por la cátedra, pero sostienen a los anteriores al guardar los datos en "
             "SQLite:")]
     s += vinetas([
@@ -682,8 +484,8 @@ def complementos():
         "<b>Reconstrucción del estado (State persistido):</b> en la base se guarda el nombre del estado; al "
         "leer, un diccionario lo traduce a la clase de estado correspondiente:",
     ])
-    s += codigo("biblioteca/persistencia/repositorio.py", 19, 21, "ESTADOS_REMITO")
-    s += codigo("biblioteca/persistencia/repositorio.py", 261, 266, "ESTADOS_REMITO[f[\"estado\"]]()")
+    s += codigo("biblioteca/persistencia/repositorio.py", 18, 20, "ESTADOS_REMITO")
+    s += codigo("biblioteca/persistencia/repositorio.py", 260, 264, "ESTADOS_REMITO[f[\"estado\"]]()")
     s += [p("Además, las restricciones de la base (claves primarias, UNIQUE y un índice único parcial que "
             "impide que un ejemplar tenga dos préstamos pendientes) funcionan como última barrera para las "
             "reglas de no duplicación, por si alguna validación se saltea por error.")]
@@ -707,8 +509,8 @@ def main():
     doc = SimpleDocTemplate(str(SALIDA), pagesize=A4, leftMargin=2 * cm, rightMargin=2 * cm,
                             topMargin=1.8 * cm, bottomMargin=2 * cm, title="Patrones de diseño aplicados",
                             author="Grupo 93", subject="TP Integrador DAO 2026 - Tema 1")
-    historia = (portada() + introduccion() + state_remito() + state_reserva() + iterator() + strategy()
-                + singleton() + factory() + observer() + colaboracion() + complementos())
+    historia = (portada() + introduccion() + state_remito() + state_reserva() + iterator() + colaboracion()
+                + complementos())
     doc.build(historia, onFirstPage=pie, onLaterPages=pie)
     print(SALIDA)
 

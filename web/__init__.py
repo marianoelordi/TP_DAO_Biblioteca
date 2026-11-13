@@ -7,7 +7,6 @@ from datetime import date, datetime
 from flask import Flask, flash, g, redirect, render_template, request, url_for
 
 from biblioteca import reportes, servicios as sv
-from biblioteca.configuracion import Configuracion
 from biblioteca.excepciones import ReglaNegocioError
 from biblioteca.persistencia import Repositorio, conectar
 
@@ -201,7 +200,7 @@ def create_app(ruta_db="biblioteca.db"):
     @app.get("/prestamos/<int:id_prestamo>")
     def prestamo(id_prestamo):
         p = g.repo.prestamo(id_prestamo)
-        multa = p.calcular_multa(Configuracion().estrategia_multa)
+        multa = p.calcular_multa()
         return render_template("prestamo.html", p=p, multa=multa)
 
     @app.post("/prestamos/<int:id_prestamo>/devolucion")

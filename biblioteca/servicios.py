@@ -4,12 +4,12 @@ No hacen commit: la transacción la cierra quien llama (la interfaz web), así u
 ReglaNegocioError deja la base sin cambios.
 """
 
-from datetime import date
+from datetime import date, timedelta
 
 from biblioteca.excepciones import ReglaNegocioError
-from biblioteca.modelos import Ejemplar, Libro, Reserva, Sede, Socio
-from biblioteca.modelos.fabrica_prestamos import FabricaPrestamos
-from biblioteca.notificaciones import NotificadorSocio
+from biblioteca.modelos import (
+    Ejemplar, Libro, PrestamoInterbibliotecario, PrestamoLocal, Reserva, Sede, Socio,
+)
 
 ESTADOS_FISICOS = ("Bueno", "Regular", "Dañado")
 
@@ -93,9 +93,16 @@ def registrar_prestamo(repo, numero_socio, id_sede_origen, id_sede_destino, codi
     _requerido(socio=numero_socio, sede_de_origen=id_sede_origen, sede_de_destino=id_sede_destino)
     if not codigos:
         raise ReglaNegocioError("Seleccione al menos un ejemplar.")
-    prestamo = FabricaPrestamos.crear_prestamo(
-        repo.siguiente_id_prestamo(), repo.socio(numero_socio), repo.sede(id_sede_origen),
-        repo.sede(id_sede_destino), [repo.ejemplar(c) for c in codigos], fecha_inicio)
+    id_prestamo, socio = repo.siguiente_id_prestamo(), repo.socio(numero_socio)
+    origen, destino = repo.sede(id_sede_origen), repo.sede(id_sede_destino)
+    ejemplares = [repo.ejemplar(c) for c in codigos]
+    inicio = fecha_inicio or date.today()
+    if origen is destino:
+        vence = inicio + timedelta(days=PrestamoLocal.PLAZO_DIAS)
+        prestamo = PrestamoLocal(id_prestamo, socio, origen, ejemplares, vence, inicio)
+    else:
+        vence = inicio + timedelta(days=PrestamoInterbibliotecario.PLAZO_DIAS)
+        prestamo = PrestamoInterbibliotecario(id_prestamo, socio, origen, destino, ejemplares, vence, inicio)
     if prestamo.es_interbibliotecario():
         # El remito se genera al registrar el préstamo: así existe antes del despacho.
         prestamo.generar_remito(repo.siguiente_numero_remito())
@@ -108,12 +115,11 @@ def avanzar_remito(repo, numero_remito, operacion, observacion=""):
     if operacion not in ("empaquetar", "despachar", "recibir"):
         raise ReglaNegocioError(f"Operación desconocida: {operacion}.")
     remito = repo.remito(numero_remito)
-    notificador = NotificadorSocio()
-    remito.agregar_observador(notificador)
     getattr(remito, operacion)(observacion.strip())
-    remito.quitar_observador(notificador)
     repo.guardar_prestamo(remito.prestamo)
-    repo.guardar_notificaciones(notificador)
+    repo.agregar_notificacion(remito.prestamo.socio,
+                              f"Remito {remito.numero_remito}: su préstamo {remito.prestamo.id_prestamo} "
+                              f"pasó a estado {remito.estado.nombre}.")
     return remito
 
 

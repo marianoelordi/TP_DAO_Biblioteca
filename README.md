@@ -15,7 +15,7 @@ El proyecto está hecho en Python con orientación a objetos y tiene cuatro capa
 | Persistencia | SQLite (`sqlite3`) | Esquema relacional y repositorio |
 | Interfaz | Flask (web) | Pantallas de ABM, préstamos, remitos, reservas y reportes |
 
-Se aplican **seis patrones de diseño**: State, Iterator, Strategy, Singleton, Factory y Observer. El documento [`Patrones de diseño aplicados.pdf`](Patrones%20de%20diseño%20aplicados.pdf) explica cada uno con el código correspondiente y su justificación.
+Se aplican **dos patrones de diseño**: State (en el remito y en la reserva) e Iterator (en el catálogo). El documento [`Patrones de diseño aplicados.pdf`](Patrones%20de%20diseño%20aplicados.pdf) explica cada uno con el código correspondiente y su justificación.
 
 ## Contenido y organización
 
@@ -25,20 +25,15 @@ Se aplican **seis patrones de diseño**: State, Iterator, Strategy, Singleton, F
 ├── requirements.txt            Dependencias (Flask)
 ├── biblioteca/
 │   ├── excepciones.py          ReglaNegocioError: toda violación de una regla de negocio
-│   ├── configuracion.py        Configuracion (Singleton): plazos y estrategia de multa
-│   ├── observador.py           Sujeto / Observador (Observer)
-│   ├── notificaciones.py       NotificadorSocio: avisa al socio los cambios del remito
 │   ├── servicios.py            Casos de uso (alta de sedes, préstamos, devoluciones, etc.)
 │   ├── reportes.py             Reportes
 │   ├── modelos/                Dominio: una clase del diagrama por módulo
 │   │   ├── sede.py, socio.py, libro.py, ejemplar.py
 │   │   ├── catalogo.py         Catalogo + iteradores (Iterator)
-│   │   ├── prestamo.py         Prestamo (abstracta), PrestamoLocal, PrestamoInterbibliotecario
-│   │   ├── fabrica_prestamos.py FabricaPrestamos (Factory)
+│   │   ├── prestamo.py         Prestamo (abstracta), PrestamoLocal, PrestamoInterbibliotecario, multas
 │   │   ├── remito.py           Remito + HistorialRemito
 │   │   ├── estados_remito.py   Pendiente, Empaquetado, Enviado, Entregado (State)
-│   │   ├── reserva.py, estados_reserva.py   Reserva y sus estados (State)
-│   │   └── multas.py           Estrategias de multa (Strategy)
+│   │   └── reserva.py, estados_reserva.py   Reserva y sus estados (State)
 │   └── persistencia/
 │       ├── esquema.sql         Tablas, claves e índices
 │       ├── base_datos.py       Conexión a SQLite
@@ -104,7 +99,7 @@ python -m unittest -v
 | 1 | Administrar sedes (dirección, contacto, horarios, estado) | Pantalla `/sedes`: alta, modificación, alta y baja lógica |
 | 2 | Administrar socios | Pantalla `/socios`: alta, modificación, habilitar e inhabilitar |
 | 3 | Administrar el catálogo de libros y ejemplares, con su sede | Pantalla `/libros`: los ejemplares se gestionan dentro de cada libro |
-| 4 | Registrar préstamos locales e interbibliotecarios | `FabricaPrestamos` elige el tipo de préstamo. El interbibliotecario genera su remito al registrarse |
+| 4 | Registrar préstamos locales e interbibliotecarios Si origen y destino coinciden es local; si no, interbibliotecario. El interbibliotecario genera su remito al registrarse |
 | 5 | Empaquetar, despachar y recibir con remito y trazabilidad | `Remito` con estados (State) y `HistorialRemito`. Incluye el remito de retorno |
 | 6 | Consultar disponibilidad | Pantalla `/disponibilidad`, que recorre el catálogo con un iterador (Iterator) |
 | 7 | Gestionar reservas | Pantalla `/reservas`: registrar, confirmar, cancelar y cumplir (State) |
@@ -114,7 +109,7 @@ python -m unittest -v
 
 - No se prestan ejemplares que no están disponibles.
 - No se presta a socios inhabilitados.
-- Se controlan las fechas de vencimiento. Las multas se calculan con la estrategia configurada.
+- Se controlan las fechas de vencimiento. Las multas se calculan a $100 por día de atraso y por ejemplar.
 - La trazabilidad del remito se mantiene en todo el trayecto. Cada paso guarda el estado, la fecha y hora, la sede y una observación.
 - No se admiten duplicados de socios, libros (ISBN), ejemplares (código) ni números de remito. Lo controla el repositorio y, como respaldo, las claves de SQLite.
 - No se prestan ejemplares que pertenecen a otra sede distinta de la de origen.
@@ -129,10 +124,6 @@ python -m unittest -v
 |--------|-----------------|----------|
 | State | `Remito`, `Reserva` | Permitir solo las operaciones válidas en cada etapa del ciclo de vida |
 | Iterator | `Catalogo` | Recorrer los ejemplares, todos o solo los disponibles de una sede, sin exponer la colección |
-| Strategy | `EstrategiaMulta` | Cambiar la forma de calcular la multa: sin multa, por día, o por día con tope |
-| Singleton | `Configuracion` | Tener una única configuración de plazos y multas para todo el sistema |
-| Factory | `FabricaPrestamos` | Crear el tipo de préstamo correcto y calcular su vencimiento |
-| Observer | `Remito` → `NotificadorSocio` | Avisar al socio cada vez que cambia el estado de su envío |
 
 ### Reportes (se pedían al menos cuatro)
 
@@ -149,6 +140,6 @@ Están en la pantalla `/reportes`:
 - **Persistencia:** base de datos SQLite.
 - **Interfaz de usuario:** aplicación web hecha con Flask.
 - **Notificaciones (opcional):** el sistema genera los avisos al socio y se pueden ver en `/notificaciones`. No envía correos reales.
-- **Pruebas:** 53 pruebas unitarias que cubren el dominio, los patrones, la persistencia y la interfaz web.
+- **Pruebas:** 47 pruebas unitarias que cubren el dominio, los patrones, la persistencia y la interfaz web.
 
 [`REQUISITOS.md`](REQUISITOS.md) tiene el detalle de cada requisito. Los que quedan pendientes son opcionales o no obligatorios: el reporte de envíos exitosos e incidencias, el historial de lecturas, las recomendaciones, el inventario con códigos y la revisión del estado de recepción.

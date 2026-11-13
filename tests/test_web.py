@@ -3,14 +3,12 @@ import tempfile
 import unittest
 
 import datos_demo
-from biblioteca.configuracion import Configuracion
 from biblioteca.persistencia import conectar
 from web import create_app
 
 
 class TestWeb(unittest.TestCase):
     def setUp(self):
-        Configuracion.reiniciar()
         descriptor, self.ruta = tempfile.mkstemp(suffix=".db")
         os.close(descriptor)
         con = conectar(self.ruta)
@@ -20,7 +18,6 @@ class TestWeb(unittest.TestCase):
 
     def tearDown(self):
         os.remove(self.ruta)
-        Configuracion.reiniciar()
 
     def get(self, url):
         respuesta = self.cliente.get(url)

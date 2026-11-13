@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS reserva (
     estado        TEXT NOT NULL
 );
 
--- Avisos generados por el Observer (NotificadorSocio) en cada cambio de estado de un remito.
+-- Avisos al socio generados en cada cambio de estado de un remito.
 CREATE TABLE IF NOT EXISTS notificacion (
     id           INTEGER PRIMARY KEY,
     numero_socio TEXT NOT NULL REFERENCES socio (numero_socio),

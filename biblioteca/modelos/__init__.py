@@ -10,6 +10,3 @@ from biblioteca.modelos.reserva import Reserva
 from biblioteca.modelos.estados_reserva import (
     EstadoReserva, ReservaPendiente, ReservaConfirmada, ReservaCumplida, ReservaCancelada,
 )
-from biblioteca.modelos.multas import EstrategiaMulta, SinMulta, MultaPorDia, MultaConTope
-# FabricaPrestamos no se exporta acá: depende de Configuracion, que a su vez importa
-# este paquete. Importarla desde biblioteca.modelos.fabrica_prestamos.

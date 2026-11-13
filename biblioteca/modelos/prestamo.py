@@ -35,8 +35,10 @@ class Prestamo(ABC):
     """Base de PrestamoLocal y PrestamoInterbibliotecario.
 
     Al crearse valida todas las condiciones y marca los ejemplares como prestados.
-    Conviene crearlos con FabricaPrestamos, que elige el tipo y calcula el vencimiento.
+    Cada subclase define PLAZO_DIAS, con el que se calcula el vencimiento al registrarlo.
     """
+
+    MULTA_POR_DIA = 100  # $ por día de atraso y por ejemplar (valor provisorio)
 
     def __init__(self, id_prestamo, socio, sede_origen, sede_destino, ejemplares,
                  fecha_vencimiento, fecha_inicio=None):
@@ -105,15 +107,16 @@ class Prestamo(ABC):
         """True si el préstamo sigue activo y ya pasó su fecha de vencimiento."""
         return self.esta_activo() and (fecha or date.today()) > self.fecha_vencimiento
 
-    def calcular_multa(self, estrategia, fecha=None):
-        """Suma la multa de cada ejemplar. La estrategia la elige quien llama
-        (normalmente Configuracion().estrategia_multa), no el préstamo."""
+    def calcular_multa(self, fecha=None):
+        """Suma la multa de cada ejemplar: MULTA_POR_DIA por cada día de atraso."""
         fecha = fecha or date.today()
-        return sum(estrategia.calcular(d.dias_atraso(self.fecha_vencimiento, fecha))
+        return sum(d.dias_atraso(self.fecha_vencimiento, fecha) * self.MULTA_POR_DIA
                    for d in self.detalles)
 
 
 class PrestamoLocal(Prestamo):
+    PLAZO_DIAS = 14
+
     def __init__(self, id_prestamo, socio, sede, ejemplares, fecha_vencimiento, fecha_inicio=None):
         super().__init__(id_prestamo, socio, sede, sede, ejemplares, fecha_vencimiento, fecha_inicio)
 
@@ -122,6 +125,8 @@ class PrestamoLocal(Prestamo):
 
 
 class PrestamoInterbibliotecario(Prestamo):
+    PLAZO_DIAS = 21
+
     def __init__(self, id_prestamo, socio, sede_origen, sede_destino, ejemplares,
                  fecha_vencimiento, fecha_inicio=None):
         if sede_origen is sede_destino:

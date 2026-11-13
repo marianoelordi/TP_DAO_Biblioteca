@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from biblioteca.modelos.estados_remito import Pendiente
-from biblioteca.observador import Sujeto
 
 
 class HistorialRemito:
@@ -15,11 +14,10 @@ class HistorialRemito:
         return f"HistorialRemito({self.nombre_estado!r}, {self.sede_ubicacion!r})"
 
 
-class Remito(Sujeto):
+class Remito:
     """Remito de un préstamo interbibliotecario.
 
-    Delega empaquetar/despachar/recibir en su estado actual (patrón State) y
-    notifica cada cambio de estado a sus observadores (patrón Observer).
+    Delega empaquetar/despachar/recibir en su estado actual (patrón State).
     Se crea a través de PrestamoInterbibliotecario.generar_remito() (ida: origen -> destino)
     o generar_remito_retorno() (vuelta: destino -> origen, cuando el socio devolvió todo).
     """
@@ -28,7 +26,6 @@ class Remito(Sujeto):
     RETORNO = "Retorno"
 
     def __init__(self, numero_remito, prestamo, tipo=IDA):
-        super().__init__()
         self.numero_remito = numero_remito
         self.prestamo = prestamo
         self.tipo = tipo
@@ -67,7 +64,6 @@ class Remito(Sujeto):
     def cambiar_estado(self, nuevo_estado, sede_actual, observacion=""):
         self._estado = nuevo_estado
         self.registrar_trazabilidad(nuevo_estado.nombre, sede_actual, observacion)
-        self.notificar()
 
     def registrar_trazabilidad(self, estado, sede, observacion=""):
         self.historial.append(HistorialRemito(estado, sede, observacion))

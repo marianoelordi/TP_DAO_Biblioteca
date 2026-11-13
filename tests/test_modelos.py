@@ -101,6 +101,26 @@ class TestPrestamo(Escenario):
         p.detalles[0].registrar_devolucion(VENCE + timedelta(days=1), "Bueno")
         self.assertFalse(p.controlar_vencimiento(VENCE + timedelta(days=1)))
 
+    def test_interbibliotecario_exige_sedes_distintas(self):
+        with self.assertRaises(ReglaNegocioError):
+            self.prestamo(destino=self.centro)
+
+
+class TestMultas(Escenario):
+    def setUp(self):
+        super().setUp()
+        self.p = self.prestamo(ejemplares=[self.ej1, self.ej2])
+
+    def test_sin_atraso_no_hay_multa(self):
+        self.assertEqual(self.p.calcular_multa(VENCE), 0)
+
+    def test_multa_por_dia_y_por_ejemplar(self):
+        self.assertEqual(self.p.calcular_multa(VENCE + timedelta(days=5)), 2 * 5 * 100)
+
+    def test_ejemplar_devuelto_deja_de_acumular(self):
+        self.p.detalles[0].registrar_devolucion(VENCE + timedelta(days=2), "Bueno")
+        self.assertEqual(self.p.calcular_multa(VENCE + timedelta(days=5)), 200 + 500)
+
 
 class TestDevolucion(Escenario):
     def test_prestamo_activo_mientras_haya_pendientes(self):

@@ -1,9 +1,7 @@
 """Reportes. Los que solo agregan datos se resuelven en SQL; el de multas usa el dominio
-porque el monto depende de la estrategia configurada (Strategy + Singleton)."""
+porque el monto lo calcula Prestamo.calcular_multa."""
 
 from datetime import date
-
-from biblioteca.configuracion import Configuracion
 
 
 def prestamos_activos_y_en_transito(repo):
@@ -28,10 +26,9 @@ def prestamos_activos_y_en_transito(repo):
 def prestamos_vencidos_y_multas(repo, fecha=None):
     """RR02: préstamos vencidos (activos) y multas acumuladas por socio, a `fecha`."""
     fecha = fecha or date.today()
-    estrategia = Configuracion().estrategia_multa
     vencidos, por_socio = [], {}
     for p in repo.prestamos():
-        multa = p.calcular_multa(estrategia, fecha)
+        multa = p.calcular_multa(fecha)
         if p.controlar_vencimiento(fecha):
             vencidos.append({"prestamo": p, "dias": (fecha - p.fecha_vencimiento).days, "multa": multa})
         if multa:
